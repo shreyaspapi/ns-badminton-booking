@@ -73,8 +73,22 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior: none;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    /* Prevent text size adjustment on orientation change */
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    /* Prevent overscroll bounce */
+    overscroll-behavior: none;
+    /* Better touch handling */
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent selection on long press */
+    -webkit-touch-callout: none;
   }
 }
 
@@ -107,5 +121,33 @@
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+}
+
+/* Mobile-friendly styles */
+@media (max-width: 640px) {
+  /* Ensure buttons are easy to tap */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+  
+  /* Prevent double-tap zoom */
+  * {
+    touch-action: manipulation;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+/* Fix for iOS input zoom */
+@media screen and (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
   }
 }
