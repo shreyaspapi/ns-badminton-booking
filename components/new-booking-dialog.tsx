@@ -31,7 +31,8 @@ import {
   MAX_PLAYERS_PER_BOOKING,
   formatTimeSlot,
   isFlexibleGameTypeSlot,
-  formatDateForDisplay
+  formatDateForDisplay,
+  getTodayString
 } from "@/lib/types"
 import { addBooking, getBookingsForDate, getUnblockedCoreDates } from "@/lib/store"
 
@@ -61,10 +62,31 @@ export function NewBookingDialog({ selectedDate, onBookingCreated, userBookingsT
       
       const bookedSlots = existingBookings.map((b) => b.timeSlot)
       const coreSlotAvailable = unblockedDates.includes(selectedDate)
+      const isToday = selectedDate === getTodayString()
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
       
       const slots = TIME_SLOTS.filter((slot) => {
+        // Filter out already booked slots
         if (bookedSlots.includes(slot)) return false
+        // Filter out blocked core team slots
         if (CORE_TEAM_SLOTS.includes(slot) && !coreSlotAvailable) return false
+        
+        // Filter out past time slots if today
+        if (isToday) {
+          const [startTime] = slot.split("-")
+          const [slotHour, slotMinute] = startTime.split(":").map(Number)
+          
+          // Handle slots that go past midnight (e.g., 23:30-00:00, 00:00-00:30)
+          // These are considered "evening" slots for the current day
+          const effectiveSlotHour = slotHour < 6 ? slotHour + 24 : slotHour
+          const effectiveCurrentHour = currentHour < 6 ? currentHour + 24 : currentHour
+          
+          if (effectiveSlotHour < effectiveCurrentHour) return false
+          if (effectiveSlotHour === effectiveCurrentHour && slotMinute <= currentMinute) return false
+        }
+        
         return true
       })
       

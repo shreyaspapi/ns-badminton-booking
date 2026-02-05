@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { UserPlus, Trash2, Users, Clock } from "lucide-react"
 import type { Booking, SkillLevel } from "@/lib/types"
-import { canJoinBooking, formatTimeSlot, getJoinBlockedReason, MAX_PLAYERS_PER_BOOKING } from "@/lib/types"
+import { canJoinBooking, formatTimeSlot, getJoinBlockedReason, MAX_PLAYERS_PER_BOOKING, getTodayString, parseLocalDate } from "@/lib/types"
 import { updateBooking, deleteBooking } from "@/lib/store"
 import {
   AlertDialog,
@@ -46,9 +46,38 @@ export function BookingCard({ booking, onUpdate }: BookingCardProps) {
   
   const isFullParty = creatorHasFullGroup || currentPlayers >= MAX_PLAYERS_PER_BOOKING
 
+  // Check if booking is in the past
+  const isBookingInPast = (() => {
+    const today = getTodayString()
+    const bookingDate = booking.date
+    
+    // If booking date is before today, it's in the past
+    if (bookingDate < today) return true
+    
+    // If booking date is today, check the time slot
+    if (bookingDate === today) {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+      
+      // Get the end time of the slot
+      const [, endTime] = booking.timeSlot.split("-")
+      const [endHour, endMinute] = endTime.split(":").map(Number)
+      
+      // Handle slots past midnight
+      const effectiveEndHour = endHour < 6 ? endHour + 24 : endHour
+      const effectiveCurrentHour = currentHour < 6 ? currentHour + 24 : currentHour
+      
+      if (effectiveEndHour < effectiveCurrentHour) return true
+      if (effectiveEndHour === effectiveCurrentHour && endMinute <= currentMinute) return true
+    }
+    
+    return false
+  })()
+
   const isCreator = user?.discordId === booking.createdById
   const isPlayerInBooking = booking.players.some((p) => p.discordId === user?.discordId)
-  const canJoin = user?.skillLevel && !isPlayerInBooking && canJoinBooking(booking, user.skillLevel as SkillLevel)
+  const canJoin = user?.skillLevel && !isPlayerInBooking && !isBookingInPast && canJoinBooking(booking, user.skillLevel as SkillLevel)
   const joinBlockedReason = user?.skillLevel && !isPlayerInBooking 
     ? getJoinBlockedReason(booking, user.skillLevel as SkillLevel) 
     : null
@@ -141,8 +170,8 @@ export function BookingCard({ booking, onUpdate }: BookingCardProps) {
           </p>
         </div>
         
-        {/* Delete button */}
-        {(isCreator || user?.isAdmin) && (
+        {/* Delete button - only show for future bookings */}
+        {(isCreator || user?.isAdmin) && !isBookingInPast && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <button
@@ -212,8 +241,8 @@ export function BookingCard({ booking, onUpdate }: BookingCardProps) {
         )}
       </div>
 
-      {/* Actions */}
-      {user && (
+      {/* Actions - only for future bookings */}
+      {user && !isBookingInPast && (
         <div className="flex gap-2">
           {canJoin && (
             <Button 
@@ -240,8 +269,15 @@ export function BookingCard({ booking, onUpdate }: BookingCardProps) {
         </div>
       )}
 
+      {/* Past booking indicator */}
+      {isBookingInPast && (
+        <p className="text-xs text-muted-foreground mt-2">
+          This booking has ended
+        </p>
+      )}
+
       {/* Blocked reason */}
-      {!canJoin && !isPlayerInBooking && user && user.skillLevel && joinBlockedReason && (
+      {!isBookingInPast && !canJoin && !isPlayerInBooking && user && user.skillLevel && joinBlockedReason && (
         <p className="text-xs text-muted-foreground mt-2">
           {joinBlockedReason}
         </p>
