@@ -20,7 +20,7 @@ import {
   getTodayString,
   formatDateForDisplay
 } from "@/lib/types"
-import { Lock, Clock } from "lucide-react"
+import { Lock, Clock, ChevronDown } from "lucide-react"
 import { Footer } from "@/components/footer"
 
 function HomePage() {
@@ -31,6 +31,7 @@ function HomePage() {
   const [unblockedDates, setUnblockedDates] = useState<string[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
   const [dataLoading, setDataLoading] = useState(true)
+  const [guidelinesExpanded, setGuidelinesExpanded] = useState(false)
 
   // Check if user needs onboarding
   useEffect(() => {
@@ -147,40 +148,58 @@ function HomePage() {
       <Header />
 
       <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
-        {/* Welcome & Guidelines section - at top */}
-        <section className="mb-8 pb-6 border-b border-border">
-          <div className="rounded-xl border border-border bg-muted/30 p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-3">Welcome New Players!</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Just a few general things to keep in mind when playing badminton at the gym:
-            </p>
-            <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-              <li>• We cannot disrupt the burn sessions the next day</li>
-              <li>• Please don't remove the entire net when disassembling the court</li>
-            </ul>
-            <p className="text-sm text-muted-foreground mb-4">
-              Can't wait to get some games in!
-            </p>
-            <a 
-              href="https://imported-pickle-bc8.notion.site/Quick-Guide-How-to-Use-Badminton-Court-1f212fd3b8cd80bca699c31143a16292"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:underline"
-            >
-              Read the full guide
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </a>
-          </div>
+        {/* Welcome & Guidelines section - collapsible */}
+        <section className="mb-8">
+          <button
+            onClick={() => setGuidelinesExpanded(!guidelinesExpanded)}
+            className="w-full flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+          >
+            <span className="font-semibold">Guidelines & Rules</span>
+            <ChevronDown 
+              className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                guidelinesExpanded ? "rotate-180" : ""
+              }`} 
+            />
+          </button>
           
-          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Booking Rules</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• Max {MAX_BOOKINGS_PER_DAY} bookings per day, 6 players per booking</li>
-            <li>• 5:00-6:30 PM reserved for Core Team</li>
-            <li>• 6:30-7:30 PM supports 1v1 or 2v2</li>
-            <li>• Join games at your skill level or higher</li>
-          </ul>
+          {guidelinesExpanded && (
+            <div className="mt-3 space-y-4 animate-in slide-in-from-top-2 duration-200">
+              <div className="rounded-xl border border-border bg-muted/30 p-5">
+                <h3 className="text-base font-semibold mb-2">Welcome New Players!</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Just a few general things to keep in mind when playing badminton at the gym:
+                </p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground mb-3">
+                  <li>• We cannot disrupt the burn sessions the next day</li>
+                  <li>• Please don't remove the entire net when disassembling the court</li>
+                </ul>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Can't wait to get some games in!
+                </p>
+                <a 
+                  href="https://imported-pickle-bc8.notion.site/Quick-Guide-How-to-Use-Badminton-Court-1f212fd3b8cd80bca699c31143a16292"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:underline"
+                >
+                  Read the full guide
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+              
+              <div className="px-1">
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">Booking Rules</h4>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li>• Max {MAX_BOOKINGS_PER_DAY} bookings per day, 6 players per booking</li>
+                  <li>• 5:00-6:30 PM reserved for Core Team</li>
+                  <li>• 6:30-7:30 PM supports 1v1 or 2v2</li>
+                  <li>• Join games at your skill level or higher</li>
+                </ul>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Hero for non-logged in users */}
