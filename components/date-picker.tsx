@@ -97,15 +97,12 @@ export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
       </div>
 
       {/* Date scroll - with proper padding to prevent clipping */}
-      <div className="relative">
+      <div className="relative -mx-4 sm:mx-0">
         <div 
           ref={scrollRef}
-          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth px-4 sm:px-0"
           style={{ 
-            paddingLeft: '2px', 
-            paddingRight: '2px',
-            marginLeft: '-2px',
-            marginRight: '-2px'
+            WebkitOverflowScrolling: 'touch'
           }}
         >
           {dates.map((date) => {
@@ -116,20 +113,20 @@ export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
               <button
                 key={formatDate(date)}
                 onClick={() => onDateChange(formatDate(date))}
-                className={`relative flex flex-col items-center justify-center flex-shrink-0 w-16 h-[72px] rounded-xl transition-all ${
+                className={`relative flex flex-col items-center justify-center flex-shrink-0 w-14 sm:w-16 h-16 sm:h-[72px] rounded-xl transition-all active:scale-95 ${
                   isSelected(date)
                     ? "bg-foreground text-background"
-                    : "bg-secondary/50 hover:bg-secondary text-foreground"
+                    : "bg-secondary/50 active:bg-secondary text-foreground"
                 }`}
               >
-                <span className={`text-[11px] font-medium uppercase tracking-wide ${
+                <span className={`text-[10px] sm:text-[11px] font-medium uppercase tracking-wide ${
                   isSelected(date) ? "text-background/70" : "text-muted-foreground"
                 }`}>
                   {dayName}
                 </span>
-                <span className="text-xl font-semibold tabular-nums leading-none mt-1">{dayNum}</span>
+                <span className="text-lg sm:text-xl font-semibold tabular-nums leading-none mt-1">{dayNum}</span>
                 {isToday(date) && (
-                  <div className={`absolute bottom-2 h-1 w-1 rounded-full ${
+                  <div className={`absolute bottom-1.5 sm:bottom-2 h-1 w-1 rounded-full ${
                     isSelected(date) ? "bg-background" : "bg-foreground"
                   }`} />
                 )}

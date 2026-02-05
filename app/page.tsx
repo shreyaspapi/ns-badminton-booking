@@ -144,10 +144,10 @@ function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col w-full">
       <Header />
 
-      <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-32">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-28">
         {/* Welcome & Guidelines section - collapsible */}
         <section className="mb-8">
           <button
