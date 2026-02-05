@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useRef, useEffect } from "react"
+import { parseLocalDate, formatLocalDate } from "@/lib/types"
 
 interface DatePickerProps {
   selectedDate: string
@@ -13,7 +14,7 @@ export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
-  const selected = new Date(selectedDate)
+  const selected = parseLocalDate(selectedDate)
   
   const dates = Array.from({ length: 14 }, (_, i) => {
     const date = new Date(today)
@@ -22,7 +23,7 @@ export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
   })
 
   const formatDate = (date: Date) => {
-    return date.toISOString().split("T")[0]
+    return formatLocalDate(date)
   }
 
   const isSelected = (date: Date) => {

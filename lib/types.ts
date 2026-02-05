@@ -166,3 +166,33 @@ export function getEveningSlots(): TimeSlot[] {
     return hour >= 17 || hour < 1
   })
 }
+
+// Parse a YYYY-MM-DD string as local date (not UTC)
+// This fixes timezone issues where "2026-02-05" parsed as UTC shows as Feb 4 in local time
+export function parseLocalDate(dateString: string): Date {
+  const [year, month, day] = dateString.split("-").map(Number)
+  return new Date(year, month - 1, day)
+}
+
+// Format a date as YYYY-MM-DD in local timezone
+export function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+// Get today's date as YYYY-MM-DD in local timezone
+export function getTodayString(): string {
+  return formatLocalDate(new Date())
+}
+
+// Format a date string for display (handles timezone correctly)
+export function formatDateForDisplay(dateString: string, options?: Intl.DateTimeFormatOptions): string {
+  const date = parseLocalDate(dateString)
+  return date.toLocaleDateString("en-US", options || {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  })
+}

@@ -30,7 +30,8 @@ import {
   RECOMMENDED_PLAYERS,
   MAX_PLAYERS_PER_BOOKING,
   formatTimeSlot,
-  isFlexibleGameTypeSlot
+  isFlexibleGameTypeSlot,
+  formatDateForDisplay
 } from "@/lib/types"
 import { addBooking, getBookingsForDate, getUnblockedCoreDates } from "@/lib/store"
 
@@ -147,11 +148,7 @@ export function NewBookingDialog({ selectedDate, onBookingCreated, userBookingsT
         <DialogHeader>
           <DialogTitle className="text-xl">Book a Court</DialogTitle>
           <DialogDescription className="text-base">
-            {new Date(selectedDate).toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
+            {formatDateForDisplay(selectedDate)}
           </DialogDescription>
         </DialogHeader>
 

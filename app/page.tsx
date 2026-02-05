@@ -16,7 +16,9 @@ import {
   formatTimeSlot,
   getAfternoonSlots,
   getEveningSlots,
-  MAX_BOOKINGS_PER_DAY 
+  MAX_BOOKINGS_PER_DAY,
+  getTodayString,
+  formatDateForDisplay
 } from "@/lib/types"
 import { Lock, Clock } from "lucide-react"
 import { Footer } from "@/components/footer"
@@ -24,10 +26,7 @@ import { Footer } from "@/components/footer"
 function HomePage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date()
-    return today.toISOString().split("T")[0]
-  })
+  const [selectedDate, setSelectedDate] = useState(() => getTodayString())
   const [bookings, setBookings] = useState<Booking[]>([])
   const [unblockedDates, setUnblockedDates] = useState<string[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
@@ -167,7 +166,7 @@ function HomePage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-semibold">
-              {new Date(selectedDate).toLocaleDateString("en-US", {
+              {formatDateForDisplay(selectedDate, {
                 weekday: "long",
                 month: "short",
                 day: "numeric",
