@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'NS Badminton Bookings',
-  description: 'Book your badminton court slots with the NS team',
+  description: 'Book your badminton court slots at NS',
 }
 
 export default function RootLayout({
