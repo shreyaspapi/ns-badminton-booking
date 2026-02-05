@@ -30,8 +30,21 @@ export function BookingCard({ booking, onUpdate }: BookingCardProps) {
   
   const currentPlayers = booking.players.length
   const expectedPlayers = booking.playerCount
-  const spotsOpen = Math.max(0, Math.min(expectedPlayers, MAX_PLAYERS_PER_BOOKING) - currentPlayers)
-  const isFullParty = currentPlayers >= expectedPlayers || currentPlayers >= MAX_PLAYERS_PER_BOOKING
+  const recommendedForGameType = booking.gameType === "1v1" ? 2 : 4
+  
+  // If creator said they have X players, that's a closed group - no open spots
+  // Open spots only exist if creator is looking for more players (playerCount < recommended)
+  // OR if actual players joined and left, creating a gap
+  const creatorHasFullGroup = expectedPlayers >= recommendedForGameType
+  
+  // Spots are only "open" if:
+  // 1. Creator is looking for players (playerCount < recommended for game type)
+  // 2. AND current players haven't filled those spots yet
+  const spotsOpen = creatorHasFullGroup 
+    ? 0  // Creator brought their own group, no open spots
+    : Math.max(0, Math.min(expectedPlayers, MAX_PLAYERS_PER_BOOKING) - currentPlayers)
+  
+  const isFullParty = creatorHasFullGroup || currentPlayers >= MAX_PLAYERS_PER_BOOKING
 
   const isCreator = user?.discordId === booking.createdById
   const isPlayerInBooking = booking.players.some((p) => p.discordId === user?.discordId)
@@ -121,7 +134,9 @@ export function BookingCard({ booking, onUpdate }: BookingCardProps) {
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {booking.skillLevel}+ · {currentPlayers}/{expectedPlayers} players
+            {booking.skillLevel}+ · {creatorHasFullGroup 
+              ? `${expectedPlayers} players (private group)` 
+              : `${currentPlayers}/${expectedPlayers} players`}
             {spotsOpen > 0 && ` · ${spotsOpen} open`}
           </p>
         </div>

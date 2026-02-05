@@ -100,7 +100,8 @@ export function getRecommendedPlayersForGameType(gameType: "1v1" | "2v2"): numbe
 // Rules:
 // 1. User must have sufficient skill level
 // 2. Booking must not be at max capacity (6 players)
-// 3. If creator specified they already have X players, don't allow more until actual players < X
+// 3. If creator has a full group (playerCount >= recommended for game type), no one can join
+// 4. If creator is looking for players, they can join until playerCount is reached
 export function canJoinBooking(booking: Booking, userSkill: SkillLevel): boolean {
   const userLevel = SKILL_LEVEL_ORDER[userSkill]
   const bookingLevel = SKILL_LEVEL_ORDER[booking.skillLevel]
@@ -111,8 +112,14 @@ export function canJoinBooking(booking: Booking, userSkill: SkillLevel): boolean
   // Hard limit: max 6 players
   if (booking.players.length >= MAX_PLAYERS_PER_BOOKING) return false
   
-  // If creator said they have X players, don't allow joining until actual < X
-  // This means if someone books for 4 people, no one else can join
+  // Check if creator has a full/private group
+  const recommendedForGameType = booking.gameType === "1v1" ? 2 : 4
+  const creatorHasFullGroup = booking.playerCount >= recommendedForGameType
+  
+  // If creator brought their own group, no one else can join
+  if (creatorHasFullGroup) return false
+  
+  // If creator is looking for players, check if spots are still open
   if (booking.players.length >= booking.playerCount) return false
   
   return true
@@ -131,8 +138,16 @@ export function getJoinBlockedReason(booking: Booking, userSkill: SkillLevel): s
     return "This game is at maximum capacity (6 players)"
   }
   
+  // Check if creator has a full/private group
+  const recommendedForGameType = booking.gameType === "1v1" ? 2 : 4
+  const creatorHasFullGroup = booking.playerCount >= recommendedForGameType
+  
+  if (creatorHasFullGroup) {
+    return "This is a private group"
+  }
+  
   if (booking.players.length >= booking.playerCount) {
-    return "This game already has a full party"
+    return "All spots have been filled"
   }
   
   return null
