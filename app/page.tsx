@@ -143,141 +143,135 @@ function HomePage() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-4 sm:py-6 flex flex-col flex-1 overflow-hidden">
-          
-          {/* Welcome & Guidelines section - at top */}
-          <section className="mb-6 pb-6 border-b border-border flex-shrink-0">
-            <div className="rounded-xl border border-border bg-muted/30 p-4 sm:p-5 mb-4">
-              <h3 className="text-base font-semibold mb-2">Welcome New Players!</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Just a few general things to keep in mind when playing badminton at the gym:
-              </p>
-              <ul className="space-y-1.5 text-sm text-muted-foreground mb-3">
-                <li>• We cannot disrupt the burn sessions the next day</li>
-                <li>• Please don't remove the entire net when disassembling the court</li>
-              </ul>
-              <p className="text-sm text-muted-foreground mb-3">
-                Can't wait to get some games in!
-              </p>
-              <a 
-                href="https://imported-pickle-bc8.notion.site/Quick-Guide-How-to-Use-Badminton-Court-1f212fd3b8cd80bca699c31143a16292"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:underline"
-              >
-                Read the full guide
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
-            
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Booking Rules</h4>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-muted-foreground">
-              <li>• Max {MAX_BOOKINGS_PER_DAY} bookings/day, 6 players/booking</li>
-              <li>• 5:00-6:30 PM reserved for Core Team</li>
-              <li>• 6:30-7:30 PM supports 1v1 or 2v2</li>
-              <li>• Join games at your skill level or higher</li>
+      <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
+        {/* Welcome & Guidelines section - at top */}
+        <section className="mb-8 pb-6 border-b border-border">
+          <div className="rounded-xl border border-border bg-muted/30 p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-3">Welcome New Players!</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Just a few general things to keep in mind when playing badminton at the gym:
+            </p>
+            <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+              <li>• We cannot disrupt the burn sessions the next day</li>
+              <li>• Please don't remove the entire net when disassembling the court</li>
             </ul>
-          </section>
-
-          {/* Hero for non-logged in users */}
-          {!user && (
-            <div className="mb-6 text-center py-4 border-b border-border flex-shrink-0">
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight mb-1">Book Your Court</h1>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Sign in with Discord to book badminton courts and join games.
-              </p>
-            </div>
-          )}
-
-          {/* Date picker */}
-          <div className="mb-4 flex-shrink-0">
-            <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
+            <p className="text-sm text-muted-foreground mb-4">
+              Can't wait to get some games in!
+            </p>
+            <a 
+              href="https://imported-pickle-bc8.notion.site/Quick-Guide-How-to-Use-Badminton-Court-1f212fd3b8cd80bca699c31143a16292"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:underline"
+            >
+              Read the full guide
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
           </div>
+          
+          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Booking Rules</h4>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li>• Max {MAX_BOOKINGS_PER_DAY} bookings per day, 6 players per booking</li>
+            <li>• 5:00-6:30 PM reserved for Core Team</li>
+            <li>• 6:30-7:30 PM supports 1v1 or 2v2</li>
+            <li>• Join games at your skill level or higher</li>
+          </ul>
+        </section>
 
-          {/* Stats bar */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-            <div>
-              <h2 className="text-base font-semibold">
-                {formatDateForDisplay(selectedDate, {
-                  weekday: "long",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {dataLoading ? "Loading..." : `${availableSlots} available · ${totalBookings} booked`}
-              </p>
-            </div>
-            
-            {user && user.hasCompletedOnboarding && (
-              <div className="flex items-center gap-3">
-                {userBookingsToday > 0 && (
-                  <span className="hidden sm:inline-block text-xs text-muted-foreground">
-                    {userBookingsToday}/{MAX_BOOKINGS_PER_DAY} today
-                  </span>
-                )}
-                <NewBookingDialog 
-                  selectedDate={selectedDate} 
-                  onBookingCreated={handleRefresh}
-                  userBookingsToday={userBookingsToday}
-                />
-              </div>
-            )}
+        {/* Hero for non-logged in users */}
+        {!user && (
+          <div className="mb-8 text-center py-8 border-b border-border">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-2">Book Your Court</h1>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Sign in with Discord to book badminton courts and join games.
+            </p>
           </div>
+        )}
 
-          {user && !user.hasCompletedOnboarding && (
-            <div className="mb-4 rounded-xl border border-border bg-muted/30 p-4 text-center flex-shrink-0">
-              <p className="text-sm text-muted-foreground">
-                Complete your profile setup to start booking.
-              </p>
-            </div>
-          )}
-
-          {/* Scrollable Slots area */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Loading state */}
-            {dataLoading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-              </div>
-            )}
-
-            {/* Slots */}
-            {!dataLoading && (
-              <div className="space-y-6 pb-4">
-                {/* Afternoon slots */}
-                {afternoonSlots.length > 0 && (
-                  <section>
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Afternoon</h3>
-                      <span className="text-xs text-muted-foreground">12:30 - 4:30 PM</span>
-                    </div>
-                    <div className="space-y-2">
-                      {afternoonSlots.map(renderSlot)}
-                    </div>
-                  </section>
-                )}
-
-                {/* Evening slots */}
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Evening</h3>
-                    <span className="text-xs text-muted-foreground">5:00 PM - 12:30 AM</span>
-                  </div>
-                  <div className="space-y-2">
-                    {eveningSlots.map(renderSlot)}
-                  </div>
-                </section>
-              </div>
-            )}
-          </div>
+        {/* Date picker */}
+        <div className="mb-8">
+          <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
         </div>
+
+        {/* Stats bar */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold">
+              {formatDateForDisplay(selectedDate, {
+                weekday: "long",
+                month: "short",
+                day: "numeric",
+              })}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {dataLoading ? "Loading..." : `${availableSlots} available · ${totalBookings} booked`}
+            </p>
+          </div>
+          
+          {user && user.hasCompletedOnboarding && (
+            <div className="flex items-center gap-3">
+              {userBookingsToday > 0 && (
+                <span className="hidden sm:inline-block text-xs text-muted-foreground">
+                  {userBookingsToday}/{MAX_BOOKINGS_PER_DAY} today
+                </span>
+              )}
+              <NewBookingDialog 
+                selectedDate={selectedDate} 
+                onBookingCreated={handleRefresh}
+                userBookingsToday={userBookingsToday}
+              />
+            </div>
+          )}
+        </div>
+
+        {user && !user.hasCompletedOnboarding && (
+          <div className="mb-6 rounded-xl border border-border bg-muted/30 p-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              Complete your profile setup to start booking.
+            </p>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {dataLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+          </div>
+        )}
+
+        {/* Slots */}
+        {!dataLoading && (
+          <div className="space-y-8">
+            {/* Afternoon slots */}
+            {afternoonSlots.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Afternoon</h3>
+                  <span className="text-xs text-muted-foreground">12:30 - 4:30 PM</span>
+                </div>
+                <div className="space-y-2">
+                  {afternoonSlots.map(renderSlot)}
+                </div>
+              </section>
+            )}
+
+            {/* Evening slots */}
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Evening</h3>
+                <span className="text-xs text-muted-foreground">5:00 PM - 12:30 AM</span>
+              </div>
+              <div className="space-y-2">
+                {eveningSlots.map(renderSlot)}
+              </div>
+            </section>
+          </div>
+        )}
       </main>
       
       <Footer />
