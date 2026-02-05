@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useRef, useEffect } from "react"
 
 interface DatePickerProps {
   selectedDate: string
@@ -8,6 +9,7 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
@@ -31,6 +33,19 @@ export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
     return formatDate(date) === formatDate(today)
   }
 
+  // Scroll selected date into view on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      const selectedIndex = dates.findIndex(d => formatDate(d) === selectedDate)
+      const button = scrollRef.current.children[selectedIndex] as HTMLElement
+      if (button) {
+        const container = scrollRef.current
+        const scrollLeft = button.offsetLeft - container.offsetWidth / 2 + button.offsetWidth / 2
+        container.scrollTo({ left: scrollLeft, behavior: 'smooth' })
+      }
+    }
+  }, [])
+
   const handlePrev = () => {
     const newDate = new Date(selected)
     newDate.setDate(selected.getDate() - 1)
@@ -50,60 +65,77 @@ export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Month header with nav */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
-          {selected.toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })}
-        </span>
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">
+            {selected.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Select a date to view available slots
+          </p>
+        </div>
         <div className="flex gap-1">
           <button
             onClick={handlePrev}
             disabled={formatDate(selected) === formatDate(today)}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-30"
+            aria-label="Previous day"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={handleNext}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            aria-label="Next day"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-        {dates.map((date) => {
-          const dayName = date.toLocaleDateString("en-US", { weekday: "short" })
-          const dayNum = date.getDate()
-          
-          return (
-            <button
-              key={formatDate(date)}
-              onClick={() => onDateChange(formatDate(date))}
-              className={`flex min-w-[52px] flex-col items-center rounded-lg px-2.5 py-2 transition-all ${
-                isSelected(date)
-                  ? "bg-foreground text-background"
-                  : "hover:bg-muted"
-              }`}
-            >
-              <span className={`text-[10px] uppercase tracking-wider ${
-                isSelected(date) ? "text-background/70" : "text-muted-foreground"
-              }`}>
-                {dayName}
-              </span>
-              <span className="text-lg font-medium tabular-nums">{dayNum}</span>
-              {isToday(date) && (
-                <div className={`mt-0.5 h-1 w-1 rounded-full ${
-                  isSelected(date) ? "bg-background" : "bg-foreground"
-                }`} />
-              )}
-            </button>
-          )
-        })}
+      {/* Date scroll - with proper padding to prevent clipping */}
+      <div className="relative">
+        <div 
+          ref={scrollRef}
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
+          style={{ 
+            paddingLeft: '2px', 
+            paddingRight: '2px',
+            marginLeft: '-2px',
+            marginRight: '-2px'
+          }}
+        >
+          {dates.map((date) => {
+            const dayName = date.toLocaleDateString("en-US", { weekday: "short" })
+            const dayNum = date.getDate()
+            
+            return (
+              <button
+                key={formatDate(date)}
+                onClick={() => onDateChange(formatDate(date))}
+                className={`relative flex flex-col items-center justify-center flex-shrink-0 w-16 h-[72px] rounded-xl transition-all ${
+                  isSelected(date)
+                    ? "bg-foreground text-background"
+                    : "bg-secondary/50 hover:bg-secondary text-foreground"
+                }`}
+              >
+                <span className={`text-[11px] font-medium uppercase tracking-wide ${
+                  isSelected(date) ? "text-background/70" : "text-muted-foreground"
+                }`}>
+                  {dayName}
+                </span>
+                <span className="text-xl font-semibold tabular-nums leading-none mt-1">{dayNum}</span>
+                {isToday(date) && (
+                  <div className={`absolute bottom-2 h-1 w-1 rounded-full ${
+                    isSelected(date) ? "bg-background" : "bg-foreground"
+                  }`} />
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

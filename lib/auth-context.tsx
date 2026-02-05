@@ -9,7 +9,8 @@ interface AuthContextType {
   isLoading: boolean
   login: () => void
   logout: () => void
-  updateSkillLevel: (level: SkillLevel) => void
+  updateSkillLevel: (level: SkillLevel) => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -18,16 +19,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    // Check for existing session
+  const refreshUser = async () => {
     const storedUser = localStorage.getItem("ns_current_user")
     if (storedUser) {
       const parsed = JSON.parse(storedUser)
-      // Refresh admin status
-      parsed.isAdmin = isAdmin(parsed.discordUsername)
+      // Refresh admin status from API
+      const adminStatus = await isAdmin(parsed.discordUsername)
+      parsed.isAdmin = adminStatus
       setUser(parsed)
+      localStorage.setItem("ns_current_user", JSON.stringify(parsed))
     }
-    setIsLoading(false)
+  }
+
+  useEffect(() => {
+    // Check for existing session
+    const initAuth = async () => {
+      const storedUser = localStorage.getItem("ns_current_user")
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser)
+        // Refresh admin status from API
+        try {
+          const adminStatus = await isAdmin(parsed.discordUsername)
+          parsed.isAdmin = adminStatus
+          setUser(parsed)
+          localStorage.setItem("ns_current_user", JSON.stringify(parsed))
+        } catch (error) {
+          console.error("Error refreshing admin status:", error)
+          setUser(parsed)
+        }
+      }
+      setIsLoading(false)
+    }
+    initAuth()
   }, [])
 
   const login = () => {
@@ -44,16 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
-  const updateSkillLevel = (level: SkillLevel) => {
+  const updateSkillLevel = async (level: SkillLevel) => {
     if (!user) return
-    const updated = { ...user, skillLevel: level }
+    const updated = { ...user, skillLevel: level, hasCompletedOnboarding: true }
     setUser(updated)
-    saveUser(updated)
-    localStorage.setItem("ns_current_user", JSON.stringify(updated))
+    try {
+      await saveUser(updated)
+      localStorage.setItem("ns_current_user", JSON.stringify(updated))
+    } catch (error) {
+      console.error("Error saving user:", error)
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateSkillLevel }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateSkillLevel, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

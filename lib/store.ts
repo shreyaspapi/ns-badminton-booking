@@ -2,137 +2,259 @@
 
 import type { Booking, User } from "./types"
 
-const BOOKINGS_KEY = "ns_badminton_bookings"
-const USERS_KEY = "ns_badminton_users"
-const ADMIN_USERNAMES_KEY = "ns_badminton_admins"
-const UNBLOCKED_CORE_DATES_KEY = "ns_badminton_unblocked_core_dates"
+// API base URL
+const API_BASE = "/api"
 
-// Default admin usernames - add your Discord username here
-const DEFAULT_ADMINS = ["your_discord_username"]
+// ============ BOOKINGS ============
 
-export function getBookings(): Booking[] {
-  if (typeof window === "undefined") return []
-  const data = localStorage.getItem(BOOKINGS_KEY)
-  return data ? JSON.parse(data) : []
-}
-
-export function saveBookings(bookings: Booking[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(BOOKINGS_KEY, JSON.stringify(bookings))
-}
-
-export function addBooking(booking: Booking) {
-  const bookings = getBookings()
-  bookings.push(booking)
-  saveBookings(bookings)
-}
-
-export function updateBooking(booking: Booking) {
-  const bookings = getBookings()
-  const index = bookings.findIndex((b) => b.id === booking.id)
-  if (index !== -1) {
-    bookings[index] = booking
-    saveBookings(bookings)
+export async function getBookings(): Promise<Booking[]> {
+  try {
+    const response = await fetch(`${API_BASE}/bookings`)
+    if (!response.ok) throw new Error("Failed to fetch bookings")
+    const data = await response.json()
+    // Map database fields to app types
+    return data.map((b: Record<string, unknown>) => ({
+      id: b.id,
+      date: b.date,
+      timeSlot: b.timeSlot || b.time_slot,
+      gameType: b.gameType || b.game_type,
+      createdBy: b.createdBy || b.created_by,
+      createdById: b.createdById || b.created_by_id,
+      playerCount: b.playerCount || b.player_count,
+      players: b.players,
+      skillLevel: b.skillLevel || b.skill_level,
+      createdAt: b.createdAt || b.created_at,
+    }))
+  } catch (error) {
+    console.error("Error fetching bookings:", error)
+    return []
   }
 }
 
-export function deleteBooking(id: string) {
-  const bookings = getBookings().filter((b) => b.id !== id)
-  saveBookings(bookings)
-}
-
-export function getBookingsForDate(date: string): Booking[] {
-  return getBookings().filter((b) => b.date === date)
-}
-
-// User management
-export function getUsers(): User[] {
-  if (typeof window === "undefined") return []
-  const data = localStorage.getItem(USERS_KEY)
-  return data ? JSON.parse(data) : []
-}
-
-export function saveUsers(users: User[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(USERS_KEY, JSON.stringify(users))
-}
-
-export function saveUser(user: User) {
-  const users = getUsers()
-  const existingIndex = users.findIndex((u) => u.discordId === user.discordId)
-  if (existingIndex !== -1) {
-    users[existingIndex] = user
-  } else {
-    users.push(user)
+export async function getBookingsForDate(date: string): Promise<Booking[]> {
+  try {
+    const response = await fetch(`${API_BASE}/bookings?date=${encodeURIComponent(date)}`)
+    if (!response.ok) throw new Error("Failed to fetch bookings")
+    const data = await response.json()
+    return data.map((b: Record<string, unknown>) => ({
+      id: b.id,
+      date: b.date,
+      timeSlot: b.timeSlot || b.time_slot,
+      gameType: b.gameType || b.game_type,
+      createdBy: b.createdBy || b.created_by,
+      createdById: b.createdById || b.created_by_id,
+      playerCount: b.playerCount || b.player_count,
+      players: b.players,
+      skillLevel: b.skillLevel || b.skill_level,
+      createdAt: b.createdAt || b.created_at,
+    }))
+  } catch (error) {
+    console.error("Error fetching bookings for date:", error)
+    return []
   }
-  saveUsers(users)
 }
 
-export function getUser(discordId: string): User | undefined {
-  return getUsers().find((u) => u.discordId === discordId)
+export async function addBooking(booking: Booking): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(booking),
+    })
+    if (!response.ok) throw new Error("Failed to add booking")
+  } catch (error) {
+    console.error("Error adding booking:", error)
+    throw error
+  }
 }
 
-// Admin management
-export function getAdminUsernames(): string[] {
-  if (typeof window === "undefined") return DEFAULT_ADMINS
-  const data = localStorage.getItem(ADMIN_USERNAMES_KEY)
-  return data ? JSON.parse(data) : DEFAULT_ADMINS
+export async function updateBooking(booking: Booking): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/bookings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(booking),
+    })
+    if (!response.ok) throw new Error("Failed to update booking")
+  } catch (error) {
+    console.error("Error updating booking:", error)
+    throw error
+  }
 }
 
-export function saveAdminUsernames(usernames: string[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(ADMIN_USERNAMES_KEY, JSON.stringify(usernames))
+export async function deleteBooking(id: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/bookings?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    })
+    if (!response.ok) throw new Error("Failed to delete booking")
+  } catch (error) {
+    console.error("Error deleting booking:", error)
+    throw error
+  }
 }
 
-export function isAdmin(discordUsername: string): boolean {
-  const admins = getAdminUsernames()
+// Legacy sync function - no longer saves bookings
+export function saveBookings(_bookings: Booking[]): void {
+  console.warn("saveBookings is deprecated - use addBooking, updateBooking, or deleteBooking instead")
+}
+
+// ============ USERS ============
+
+export async function getUsers(): Promise<User[]> {
+  try {
+    const response = await fetch(`${API_BASE}/users`)
+    if (!response.ok) throw new Error("Failed to fetch users")
+    const data = await response.json()
+    return data.map((u: Record<string, unknown>) => ({
+      id: u.id,
+      discordId: u.discordId || u.discord_id,
+      discordUsername: u.discordUsername || u.discord_username,
+      discordAvatar: u.discordAvatar || u.discord_avatar,
+      skillLevel: u.skillLevel || u.skill_level,
+      isAdmin: u.isAdmin || u.is_admin,
+      hasCompletedOnboarding: u.hasCompletedOnboarding || u.has_completed_onboarding || false,
+    }))
+  } catch (error) {
+    console.error("Error fetching users:", error)
+    return []
+  }
+}
+
+export async function getUser(discordId: string): Promise<User | undefined> {
+  try {
+    const response = await fetch(`${API_BASE}/users?discordId=${encodeURIComponent(discordId)}`)
+    if (!response.ok) throw new Error("Failed to fetch user")
+    const data = await response.json()
+    if (!data) return undefined
+    return {
+      id: data.id,
+      discordId: data.discordId || data.discord_id,
+      discordUsername: data.discordUsername || data.discord_username,
+      discordAvatar: data.discordAvatar || data.discord_avatar,
+      skillLevel: data.skillLevel || data.skill_level,
+      isAdmin: data.isAdmin || data.is_admin,
+      hasCompletedOnboarding: data.hasCompletedOnboarding || data.has_completed_onboarding || false,
+    }
+  } catch (error) {
+    console.error("Error fetching user:", error)
+    return undefined
+  }
+}
+
+export async function saveUser(user: User): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(user),
+    })
+    if (!response.ok) throw new Error("Failed to save user")
+  } catch (error) {
+    console.error("Error saving user:", error)
+    throw error
+  }
+}
+
+// Legacy sync function
+export function saveUsers(_users: User[]): void {
+  console.warn("saveUsers is deprecated - use saveUser instead")
+}
+
+// ============ ADMINS ============
+
+export async function getAdminUsernames(): Promise<string[]> {
+  try {
+    const response = await fetch(`${API_BASE}/admins`)
+    if (!response.ok) throw new Error("Failed to fetch admins")
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching admins:", error)
+    return ["shreyaspapi"] // Default fallback
+  }
+}
+
+export async function isAdmin(discordUsername: string): Promise<boolean> {
+  const admins = await getAdminUsernames()
   return admins.some((admin) => admin.toLowerCase() === discordUsername.toLowerCase())
 }
 
-export function addAdmin(username: string) {
-  const admins = getAdminUsernames()
-  if (!admins.some((a) => a.toLowerCase() === username.toLowerCase())) {
-    admins.push(username)
-    saveAdminUsernames(admins)
+export async function addAdmin(username: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/admins`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    })
+    if (!response.ok) throw new Error("Failed to add admin")
+  } catch (error) {
+    console.error("Error adding admin:", error)
+    throw error
   }
 }
 
-export function removeAdmin(username: string) {
-  const admins = getAdminUsernames().filter(
-    (a) => a.toLowerCase() !== username.toLowerCase()
-  )
-  saveAdminUsernames(admins)
+export async function removeAdmin(username: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/admins?username=${encodeURIComponent(username)}`, {
+      method: "DELETE",
+    })
+    if (!response.ok) throw new Error("Failed to remove admin")
+  } catch (error) {
+    console.error("Error removing admin:", error)
+    throw error
+  }
 }
 
-// Core team slot management (5:00-6:30)
-// By default, 5:00-6:30 is blocked for core team
-// Admins can "unblock" specific dates to allow regular bookings
-
-export function getUnblockedCoreDates(): string[] {
-  if (typeof window === "undefined") return []
-  const data = localStorage.getItem(UNBLOCKED_CORE_DATES_KEY)
-  return data ? JSON.parse(data) : []
+// Legacy sync function
+export function saveAdminUsernames(_usernames: string[]): void {
+  console.warn("saveAdminUsernames is deprecated - use addAdmin or removeAdmin instead")
 }
 
-export function saveUnblockedCoreDates(dates: string[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(UNBLOCKED_CORE_DATES_KEY, JSON.stringify(dates))
+// ============ CORE DATES ============
+
+export async function getUnblockedCoreDates(): Promise<string[]> {
+  try {
+    const response = await fetch(`${API_BASE}/core-dates`)
+    if (!response.ok) throw new Error("Failed to fetch core dates")
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching core dates:", error)
+    return []
+  }
 }
 
-export function isCoreSlotUnblocked(date: string): boolean {
-  const unblockedDates = getUnblockedCoreDates()
+export async function isCoreSlotUnblocked(date: string): Promise<boolean> {
+  const unblockedDates = await getUnblockedCoreDates()
   return unblockedDates.includes(date)
 }
 
-export function unblockCoreSlot(date: string) {
-  const dates = getUnblockedCoreDates()
-  if (!dates.includes(date)) {
-    dates.push(date)
-    saveUnblockedCoreDates(dates)
+export async function unblockCoreSlot(date: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/core-dates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date }),
+    })
+    if (!response.ok) throw new Error("Failed to unblock core slot")
+  } catch (error) {
+    console.error("Error unblocking core slot:", error)
+    throw error
   }
 }
 
-export function blockCoreSlot(date: string) {
-  const dates = getUnblockedCoreDates().filter((d) => d !== date)
-  saveUnblockedCoreDates(dates)
+export async function blockCoreSlot(date: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/core-dates?date=${encodeURIComponent(date)}`, {
+      method: "DELETE",
+    })
+    if (!response.ok) throw new Error("Failed to block core slot")
+  } catch (error) {
+    console.error("Error blocking core slot:", error)
+    throw error
+  }
+}
+
+// Legacy sync function
+export function saveUnblockedCoreDates(_dates: string[]): void {
+  console.warn("saveUnblockedCoreDates is deprecated - use unblockCoreSlot or blockCoreSlot instead")
 }

@@ -1,30 +1,63 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { AuthProvider, useAuth } from "@/lib/auth-context"
 import { Header } from "@/components/header"
 import { DatePicker } from "@/components/date-picker"
 import { BookingCard } from "@/components/booking-card"
 import { NewBookingDialog } from "@/components/new-booking-dialog"
-import { getBookingsForDate, isCoreSlotUnblocked } from "@/lib/store"
+import { getBookingsForDate, getUnblockedCoreDates } from "@/lib/store"
 import type { Booking, TimeSlot } from "@/lib/types"
-import { TIME_SLOTS, CORE_TEAM_SLOT, getGameTypeForSlot } from "@/lib/types"
-import { Lock } from "lucide-react"
+import { 
+  TIME_SLOTS, 
+  CORE_TEAM_SLOTS, 
+  FLEXIBLE_GAME_TYPE_SLOTS,
+  formatTimeSlot,
+  getAfternoonSlots,
+  getEveningSlots,
+  MAX_BOOKINGS_PER_DAY 
+} from "@/lib/types"
+import { Lock, Clock } from "lucide-react"
+import { Footer } from "@/components/footer"
 
 function HomePage() {
   const { user, isLoading } = useAuth()
+  const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date()
     return today.toISOString().split("T")[0]
   })
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [unblockedDates, setUnblockedDates] = useState<string[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
+  const [dataLoading, setDataLoading] = useState(true)
 
-  const coreSlotUnblocked = isCoreSlotUnblocked(selectedDate)
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (!isLoading && user && !user.hasCompletedOnboarding) {
+      router.push("/onboarding")
+    }
+  }, [isLoading, user, router])
+
+  const loadData = useCallback(async () => {
+    setDataLoading(true)
+    try {
+      const [bookingsData, unblockedData] = await Promise.all([
+        getBookingsForDate(selectedDate),
+        getUnblockedCoreDates()
+      ])
+      setBookings(bookingsData)
+      setUnblockedDates(unblockedData)
+    } catch (error) {
+      console.error("Error loading data:", error)
+    }
+    setDataLoading(false)
+  }, [selectedDate])
 
   useEffect(() => {
-    setBookings(getBookingsForDate(selectedDate))
-  }, [selectedDate, refreshKey])
+    loadData()
+  }, [loadData, refreshKey])
 
   const handleRefresh = () => {
     setRefreshKey((k) => k + 1)
@@ -34,6 +67,28 @@ function HomePage() {
     return bookings.find((b) => b.timeSlot === slot)
   }
 
+  const isCoreSlotUnblocked = (slot: TimeSlot) => {
+    if (!CORE_TEAM_SLOTS.includes(slot)) return true
+    return unblockedDates.includes(selectedDate)
+  }
+
+  // Count user's bookings for selected date
+  const userBookingsToday = user 
+    ? bookings.filter(b => b.createdById === user.discordId).length 
+    : 0
+
+  const afternoonSlots = getAfternoonSlots()
+  const eveningSlots = getEveningSlots()
+
+  // Calculate available slots
+  const availableSlots = TIME_SLOTS.filter(slot => {
+    const hasBooking = bookings.some(b => b.timeSlot === slot)
+    const isCoreBlocked = CORE_TEAM_SLOTS.includes(slot) && !unblockedDates.includes(selectedDate)
+    return !hasBooking && !isCoreBlocked
+  }).length
+
+  const totalBookings = bookings.length
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -42,97 +97,160 @@ function HomePage() {
     )
   }
 
+  const renderSlot = (slot: TimeSlot) => {
+    const booking = getBookingForSlot(slot)
+    const isFlexible = FLEXIBLE_GAME_TYPE_SLOTS.includes(slot)
+    const isCoreSlot = CORE_TEAM_SLOTS.includes(slot)
+    const isBlocked = isCoreSlot && !isCoreSlotUnblocked(slot)
+
+    if (booking) {
+      return <BookingCard key={slot} booking={booking} onUpdate={handleRefresh} />
+    }
+
+    if (isBlocked) {
+      return (
+        <div
+          key={slot}
+          className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3"
+        >
+          <div className="flex items-center gap-3">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="font-medium text-muted-foreground">{formatTimeSlot(slot)}</p>
+            </div>
+          </div>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">Core Team</span>
+        </div>
+      )
+    }
+
+    return (
+      <div
+        key={slot}
+        className="flex items-center justify-between rounded-xl border border-dashed border-border px-4 py-3 transition-colors hover:border-foreground/20 hover:bg-muted/30"
+      >
+        <div className="flex items-center gap-3">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <p className="font-medium">{formatTimeSlot(slot)}</p>
+            <p className="text-xs text-muted-foreground">
+              {isFlexible ? "1v1 or 2v2" : "2v2"}
+            </p>
+          </div>
+        </div>
+        <span className="text-xs text-muted-foreground">Available</span>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
+        {/* Hero for non-logged in users */}
+        {!user && (
+          <div className="mb-8 text-center py-8 border-b border-border">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-2">Book Your Court</h1>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Sign in with Discord to book badminton courts and join games.
+            </p>
+          </div>
+        )}
+
         {/* Date picker */}
         <div className="mb-8">
           <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
         </div>
 
-        {/* Section header */}
-        <div className="mb-4 flex items-center justify-between">
+        {/* Stats bar */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-lg font-medium text-foreground">
+            <h2 className="text-base font-semibold">
               {new Date(selectedDate).toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "short",
                 day: "numeric",
               })}
-            </h1>
+            </h2>
             <p className="text-sm text-muted-foreground">
-              {TIME_SLOTS.length - bookings.length - (coreSlotUnblocked ? 0 : 1)} slots available
+              {dataLoading ? "Loading..." : `${availableSlots} available · ${totalBookings} booked`}
             </p>
           </div>
-          {user && <NewBookingDialog selectedDate={selectedDate} onBookingCreated={handleRefresh} />}
+          
+          {user && user.hasCompletedOnboarding && (
+            <div className="flex items-center gap-3">
+              {userBookingsToday > 0 && (
+                <span className="hidden sm:inline-block text-xs text-muted-foreground">
+                  {userBookingsToday}/{MAX_BOOKINGS_PER_DAY} today
+                </span>
+              )}
+              <NewBookingDialog 
+                selectedDate={selectedDate} 
+                onBookingCreated={handleRefresh}
+                userBookingsToday={userBookingsToday}
+              />
+            </div>
+          )}
         </div>
 
-        {!user && (
-          <div className="mb-6 rounded-xl border border-border bg-card p-6 text-center">
+        {user && !user.hasCompletedOnboarding && (
+          <div className="mb-6 rounded-xl border border-border bg-muted/30 p-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Sign in with Discord to book a slot or join a game.
+              Complete your profile setup to start booking.
             </p>
           </div>
         )}
 
-        {/* Time slots */}
-        <div className="space-y-3">
-          {TIME_SLOTS.map((slot) => {
-            const booking = getBookingForSlot(slot)
-            const gameType = getGameTypeForSlot(slot)
+        {/* Loading state */}
+        {dataLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+          </div>
+        )}
 
-            if (booking) {
-              return <BookingCard key={slot} booking={booking} onUpdate={handleRefresh} />
-            }
-
-            // Check if this is the core team slot and if it's blocked
-            const isCoreSlot = slot === CORE_TEAM_SLOT
-            const isBlocked = isCoreSlot && !coreSlotUnblocked
-
-            if (isBlocked) {
-              return (
-                <div
-                  key={slot}
-                  className="flex items-center justify-between rounded-xl border border-border bg-muted/50 p-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-base font-medium text-muted-foreground">{slot}</span>
-                    <span className="text-sm text-muted-foreground/60">{gameType}</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">Core Team</span>
+        {/* Slots */}
+        {!dataLoading && (
+          <div className="space-y-8">
+            {/* Afternoon slots */}
+            {afternoonSlots.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Afternoon</h3>
+                  <span className="text-xs text-muted-foreground">12:30 - 4:30 PM</span>
                 </div>
-              )
-            }
-
-            return (
-              <div
-                key={slot}
-                className="flex items-center justify-between rounded-xl border border-dashed border-border p-4"
-              >
-                <div>
-                  <span className="text-base font-medium text-muted-foreground">{slot}</span>
-                  <span className="ml-2 text-sm text-muted-foreground/60">{gameType}</span>
+                <div className="space-y-2">
+                  {afternoonSlots.map(renderSlot)}
                 </div>
-                <span className="text-sm text-muted-foreground">Available</span>
+              </section>
+            )}
+
+            {/* Evening slots */}
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Evening</h3>
+                <span className="text-xs text-muted-foreground">5:00 PM - 12:30 AM</span>
               </div>
-            )
-          })}
-        </div>
+              <div className="space-y-2">
+                {eveningSlots.map(renderSlot)}
+              </div>
+            </section>
+          </div>
+        )}
 
-        {/* Rules */}
-        <div className="mt-12 space-y-3 border-t border-border pt-8">
-          <h2 className="text-sm font-medium text-foreground">Booking rules</h2>
+        {/* Rules section */}
+        <section className="mt-12 pt-8 border-t border-border">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Guidelines</h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>5:00-6:30 is reserved for Core Team (can be opened by admins)</li>
-            <li>6:30-7:30 is 1v1 only (2 players max)</li>
-            <li>All other slots are 2v2 (4 players max)</li>
-            <li>Players can join games at their skill level or higher</li>
+            <li>• Max {MAX_BOOKINGS_PER_DAY} bookings per day, 6 players per booking</li>
+            <li>• 5:00-6:30 PM reserved for Core Team</li>
+            <li>• 6:30-7:30 PM supports 1v1 or 2v2</li>
+            <li>• Join games at your skill level or higher</li>
           </ul>
-        </div>
+        </section>
       </main>
+      
+      <Footer />
     </div>
   )
 }
