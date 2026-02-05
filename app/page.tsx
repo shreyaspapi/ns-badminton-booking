@@ -147,7 +147,7 @@ function HomePage() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
+      <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-24">
         {/* Welcome & Guidelines section - collapsible */}
         <section className="mb-8">
           <button
